@@ -1,27 +1,35 @@
+using System.Text.Json;
+using EventStore.Client;
 using Fintech.Bank.EventSourcing.Domain;
 
 namespace Fintech.Bank.EventSourcing.Features.CreateBankAccount.Implementation;
 
-public class CreateBankAccountService(AppDbContext dbContext) : ICreateBankAccountService
+public class CreateBankAccountService(EventStoreClient client) : ICreateBankAccountService
 {
     public async Task<AccountDto> CreateAccount(string accountNumber)
     {
-        var transactionEvent = new TransactionEvent
+        var accountId = Guid.NewGuid();
+
+        var transactionEvent = new InitializeAccountEvent
         {
-            Id = Guid.NewGuid(),
-            AccountId = Guid.NewGuid(),
+            AccountId = accountId,
             AccountNumber = accountNumber,
-            Type = TransactionEventType.Initialized,
-            Amount = 1_000_000,
-            CreatedAt = DateTime.UtcNow
+            Balance = 1_000_000
         };
 
-        dbContext.TransactionEvents.Add(transactionEvent);
-        await dbContext.SaveChangesAsync();
+        var eventData = new EventData(
+            Uuid.NewUuid(),
+            nameof(TransactionEventType.Initialized),
+            JsonSerializer.SerializeToUtf8Bytes(transactionEvent));
+
+        await client.AppendToStreamAsync(
+            $"account-{accountId}",
+            StreamState.NoStream,
+            [eventData]);
 
         return new AccountDto
         {
-            Id = transactionEvent.Id,
+            Id = accountId,
             AccountNumber = accountNumber
         };
     }

@@ -11,3 +11,10 @@ services:
       POSTGRES_DB: postgres
     ports:
       - "5432:5432"
+  event_store:
+    image: eventstore/eventstore:lts
+    ports:
+      - "2113:2113"
+      - "1113:1113"
+    environment:
+      INSECURE: "true" 

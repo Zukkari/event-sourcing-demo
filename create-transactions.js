@@ -10,8 +10,8 @@ export default function () {
     const url = "http://localhost:5023/api/v1/transactions";
 
     const payload = JSON.stringify({
-        "from": "9501d105-72f6-4139-8824-f1422dfa410d",
-        "to": "38910c99-6e34-495e-8be7-b8388e9049d3",
+        "from": "5b0774a2-8cd4-488c-b525-bb81384568f0",
+        "to": "b408b513-f7c1-46dd-90cc-b6f2fedf1995",
         "amount": 1
     });
 

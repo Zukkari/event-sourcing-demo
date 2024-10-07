@@ -1,11 +1,9 @@
-using Fintech.Bank.EventSourcing;
+using EventStore.Client;
 using Fintech.Bank.EventSourcing.Features.CreateBankAccount;
 using Fintech.Bank.EventSourcing.Features.CreateBankAccount.Implementation;
 using Fintech.Bank.EventSourcing.Features.CreateTransaction;
 using Fintech.Bank.EventSourcing.Features.CreateTransaction.Implementation;
-using Fintech.Bank.EventSourcing.Filters;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,12 +16,14 @@ builder.Services.AddScoped<ICreateBankAccountService, CreateBankAccountService>(
 builder.Services.AddScoped<ICreateTransactionService, CreateTransactionService>();
 builder.Services.AddScoped<ICreateTransactionRepository, CreateTransactionRepository>();
 
-builder.Services.AddTransient<IStartupFilter, MigrationFilter>();
-
-builder.Services.AddDbContext<AppDbContext>((_, options) =>
+builder.Services.AddScoped<EventStoreClient>(_ =>
 {
     var connectionString = builder.Configuration.GetConnectionString("ServiceConnection");
-    options.UseNpgsql(connectionString, b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName));
+    ArgumentNullException.ThrowIfNull(connectionString);
+
+    var settings = EventStoreClientSettings.Create(connectionString);
+
+    return new EventStoreClient(settings);
 });
 
 var app = builder.Build();
@@ -37,7 +37,7 @@ app.MapPost("/api/v1/accounts",
 
 app.MapPost("/api/v1/transactions",
     async ([FromBody] CreateTransactionDto createTransactionDto, [FromServices] ICreateTransactionService service) =>
-    { 
+    {
         var transaction = await service.CreateTransaction(createTransactionDto);
         return Results.Ok(transaction);
     });

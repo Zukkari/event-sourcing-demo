@@ -1,20 +1,41 @@
+using System.Text.Json;
+using EventStore.Client;
 using Fintech.Bank.EventSourcing.Domain;
-using Microsoft.EntityFrameworkCore;
 
 namespace Fintech.Bank.EventSourcing.Features.CreateTransaction.Implementation;
 
-public class CreateTransactionRepository(AppDbContext dbContext) : ICreateTransactionRepository
+public class CreateTransactionRepository(EventStoreClient client) : ICreateTransactionRepository
 {
     public async Task<Account> GetAccountById(Guid id)
     {
         var account = new Account();
 
-        await foreach (var transactionEvent in dbContext.TransactionEvents
-                           .AsNoTracking()
-                           .Where(x => x.AccountId == id)
-                           .OrderBy(x => x.CreatedAt).AsAsyncEnumerable())
+        await foreach (var accountEvent in client
+                           .ReadStreamAsync(Direction.Forwards, $"account-{id}", StreamPosition.Start)
+                           .AsAsyncEnumerable())
         {
-            account.Apply(transactionEvent);
+            switch (accountEvent.Event.EventType)
+            {
+                case nameof(TransactionEventType.Initialized):
+                    var initializedEvent =
+                        JsonSerializer.Deserialize<InitializeAccountEvent>(accountEvent.Event.Data.Span);
+                    ArgumentNullException.ThrowIfNull(initializedEvent);
+
+                    initializedEvent.Apply(account);
+                    break;
+                case nameof(TransactionEventType.Debit):
+                    var debitEvent = JsonSerializer.Deserialize<DebitTransactionEvent>(accountEvent.Event.Data.Span);
+                    ArgumentNullException.ThrowIfNull(debitEvent);
+
+                    debitEvent.Apply(account);
+                    break;
+                case nameof(TransactionEventType.Credit):
+                    var creditEvent = JsonSerializer.Deserialize<CreditTransactionEvent>(accountEvent.Event.Data.Span);
+                    ArgumentNullException.ThrowIfNull(creditEvent);
+
+                    creditEvent.Apply(account);
+                    break;
+            }
         }
 
         return account;
@@ -24,27 +45,37 @@ public class CreateTransactionRepository(AppDbContext dbContext) : ICreateTransa
     {
         var transactionId = Guid.NewGuid();
 
-        dbContext.TransactionEvents.Add(new TransactionEvent
+        var debitEvent = new DebitTransactionEvent
         {
-            Id = Guid.NewGuid(),
-            AccountId = from.Id,
-            Type = TransactionEventType.Debit,
-            Amount = amount,
-            CreatedAt = DateTime.UtcNow,
-            TransactionId = transactionId
-        });
+            TransactionId = transactionId,
+            Amount = amount
+        };
 
-        dbContext.TransactionEvents.Add(new TransactionEvent
+        var debitEventData = new EventData(
+            Uuid.NewUuid(),
+            nameof(TransactionEventType.Debit),
+            JsonSerializer.SerializeToUtf8Bytes(debitEvent));
+
+        await client.AppendToStreamAsync(
+            $"account-{from.Id}",
+            StreamState.Any,
+            [debitEventData]);
+
+        var creditEvent = new CreditTransactionEvent
         {
-            Id = Guid.NewGuid(),
-            AccountId = to.Id,
-            Type = TransactionEventType.Credit,
-            Amount = amount,
-            CreatedAt = DateTime.UtcNow,
-            TransactionId = transactionId
-        });
+            TransactionId = transactionId,
+            Amount = amount
+        };
 
-        await dbContext.SaveChangesAsync();
+        var creditEventData = new EventData(
+            Uuid.NewUuid(),
+            nameof(TransactionEventType.Credit),
+            JsonSerializer.SerializeToUtf8Bytes(creditEvent));
+
+        await client.AppendToStreamAsync(
+            $"account-{to.Id}",
+            StreamState.Any,
+            [creditEventData]);
 
         return transactionId;
     }
