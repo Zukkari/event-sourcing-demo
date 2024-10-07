@@ -1,0 +1,6 @@
+@Fintech.Bank.EventSourcing_HostAddress = http://localhost:5023
+
+GET {{Fintech.Bank.EventSourcing_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
