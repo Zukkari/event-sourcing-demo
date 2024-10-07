@@ -4,38 +4,21 @@ using Fintech.Bank.EventSourcing.Domain;
 
 namespace Fintech.Bank.EventSourcing.Features.CreateTransaction.Implementation;
 
-public class CreateTransactionRepository(EventStoreClient client) : ICreateTransactionRepository
+public class CreateTransactionRepository(
+    EventStoreProjectionManagementClient projectionManagementClient,
+    EventStoreClient client) : ICreateTransactionRepository
 {
     public async Task<Account> GetAccountById(Guid id)
     {
         var account = new Account();
 
-        await foreach (var accountEvent in client
-                           .ReadStreamAsync(Direction.Forwards, $"account-{id}", StreamPosition.Start)
-                           .AsAsyncEnumerable())
+        var balances =
+            await projectionManagementClient.GetResultAsync<Dictionary<Guid, decimal>>("account_balance_projection_3");
+
+        if (balances.TryGetValue(id, out var balance))
         {
-            switch (accountEvent.Event.EventType)
-            {
-                case nameof(TransactionEventType.Initialized):
-                    var initializedEvent =
-                        JsonSerializer.Deserialize<InitializeAccountEvent>(accountEvent.Event.Data.Span);
-                    ArgumentNullException.ThrowIfNull(initializedEvent);
-
-                    initializedEvent.Apply(account);
-                    break;
-                case nameof(TransactionEventType.Debit):
-                    var debitEvent = JsonSerializer.Deserialize<DebitTransactionEvent>(accountEvent.Event.Data.Span);
-                    ArgumentNullException.ThrowIfNull(debitEvent);
-
-                    debitEvent.Apply(account);
-                    break;
-                case nameof(TransactionEventType.Credit):
-                    var creditEvent = JsonSerializer.Deserialize<CreditTransactionEvent>(accountEvent.Event.Data.Span);
-                    ArgumentNullException.ThrowIfNull(creditEvent);
-
-                    creditEvent.Apply(account);
-                    break;
-            }
+            account.Id = id;
+            account.Balance = balance;
         }
 
         return account;
@@ -48,7 +31,8 @@ public class CreateTransactionRepository(EventStoreClient client) : ICreateTrans
         var debitEvent = new DebitTransactionEvent
         {
             TransactionId = transactionId,
-            Amount = amount
+            Amount = amount,
+            AccountId = from.Id
         };
 
         var debitEventData = new EventData(
@@ -64,7 +48,8 @@ public class CreateTransactionRepository(EventStoreClient client) : ICreateTrans
         var creditEvent = new CreditTransactionEvent
         {
             TransactionId = transactionId,
-            Amount = amount
+            Amount = amount,
+            AccountId = to.Id
         };
 
         var creditEventData = new EventData(

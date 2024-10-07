@@ -16,7 +16,7 @@ builder.Services.AddScoped<ICreateBankAccountService, CreateBankAccountService>(
 builder.Services.AddScoped<ICreateTransactionService, CreateTransactionService>();
 builder.Services.AddScoped<ICreateTransactionRepository, CreateTransactionRepository>();
 
-builder.Services.AddScoped<EventStoreClient>(_ =>
+builder.Services.AddSingleton<EventStoreClient>(_ =>
 {
     var connectionString = builder.Configuration.GetConnectionString("ServiceConnection");
     ArgumentNullException.ThrowIfNull(connectionString);
@@ -24,6 +24,16 @@ builder.Services.AddScoped<EventStoreClient>(_ =>
     var settings = EventStoreClientSettings.Create(connectionString);
 
     return new EventStoreClient(settings);
+});
+
+builder.Services.AddSingleton<EventStoreProjectionManagementClient>(_ =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("ServiceConnection");
+    ArgumentNullException.ThrowIfNull(connectionString);
+
+    var settings = EventStoreClientSettings.Create(connectionString);
+
+    return new EventStoreProjectionManagementClient(settings);
 });
 
 var app = builder.Build();
