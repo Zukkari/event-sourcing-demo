@@ -8,6 +8,7 @@ public class CreateBankAccountService(AppDbContext dbContext) : ICreateBankAccou
         {
             Id = Guid.NewGuid(),
             AccountNumber = accountNumber,
+            Balance = 0,
             CreatedAt = DateTime.UtcNow
         };
 

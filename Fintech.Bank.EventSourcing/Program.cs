@@ -1,6 +1,8 @@
 using Fintech.Bank.EventSourcing;
 using Fintech.Bank.EventSourcing.Features.CreateBankAccount;
 using Fintech.Bank.EventSourcing.Features.CreateBankAccount.Implementation;
+using Fintech.Bank.EventSourcing.Features.CreateTransaction;
+using Fintech.Bank.EventSourcing.Features.CreateTransaction.Implementation;
 using Fintech.Bank.EventSourcing.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +15,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<ICreateBankAccountService, CreateBankAccountService>();
+builder.Services.AddScoped<ICreateTransactionService, CreateTransactionService>();
 
 builder.Services.AddTransient<IStartupFilter, MigrationFilter>();
 
@@ -29,6 +32,13 @@ app.MapPost("/api/v1/accounts",
     {
         var account = await service.CreateAccount(accountNumber);
         return Results.Ok(account);
+    });
+
+app.MapPost("/api/v1/transactions",
+    async ([FromBody] CreateTransactionDto createTransactionDto, [FromServices] ICreateTransactionService service) =>
+    { 
+        var transaction = await service.CreateTransaction(createTransactionDto);
+        return Results.Ok(transaction);
     });
 
 // Configure the HTTP request pipeline.

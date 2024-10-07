@@ -34,6 +34,10 @@ namespace Fintech.Bank.EventSourcing.Migrations
                         .HasColumnType("text")
                         .HasColumnName("account_number");
 
+                    b.Property<decimal>("Balance")
+                        .HasColumnType("numeric")
+                        .HasColumnName("balance");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -42,6 +46,62 @@ namespace Fintech.Bank.EventSourcing.Migrations
                         .HasName("pk_accounts");
 
                     b.ToTable("accounts", (string)null);
+                });
+
+            modelBuilder.Entity("Fintech.Bank.EventSourcing.Features.CreateTransaction.Transaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("FromId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("from_id");
+
+                    b.Property<Guid>("ToId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("to_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_transactions");
+
+                    b.HasIndex("FromId")
+                        .HasDatabaseName("ix_transactions_from_id");
+
+                    b.HasIndex("ToId")
+                        .HasDatabaseName("ix_transactions_to_id");
+
+                    b.ToTable("transactions", (string)null);
+                });
+
+            modelBuilder.Entity("Fintech.Bank.EventSourcing.Features.CreateTransaction.Transaction", b =>
+                {
+                    b.HasOne("Fintech.Bank.EventSourcing.Features.CreateBankAccount.Account", "From")
+                        .WithMany()
+                        .HasForeignKey("FromId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_transactions_accounts_from_id");
+
+                    b.HasOne("Fintech.Bank.EventSourcing.Features.CreateBankAccount.Account", "To")
+                        .WithMany()
+                        .HasForeignKey("ToId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_transactions_accounts_to_id");
+
+                    b.Navigation("From");
+
+                    b.Navigation("To");
                 });
 #pragma warning restore 612, 618
         }
