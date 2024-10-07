@@ -1,13 +1,11 @@
-using Fintech.Bank.EventSourcing.Features.CreateBankAccount;
-using Fintech.Bank.EventSourcing.Features.CreateTransaction;
+using Fintech.Bank.EventSourcing.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace Fintech.Bank.EventSourcing;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public DbSet<Account> Accounts { get; set; }
-    public DbSet<Transaction> Transactions { get; set; }
+    public DbSet<TransactionEvent> TransactionEvents { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -16,20 +14,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Account>()
-            .HasKey(x => x.Id);
-
-        modelBuilder.Entity<Transaction>(transaction =>
+        modelBuilder.Entity<TransactionEvent>(transactionEvent =>
         {
-            transaction.HasKey(x => x.Id);
+            transactionEvent.HasKey(x => x.Id);
 
-            transaction.HasOne(x => x.From)
-                .WithMany()
-                .IsRequired();
-
-            transaction.HasOne(x => x.To)
-                .WithMany()
-                .IsRequired();
+            transactionEvent.HasIndex(x => x.AccountId);
+            transactionEvent.HasIndex(x => x.CreatedAt);
         });
     }
 }

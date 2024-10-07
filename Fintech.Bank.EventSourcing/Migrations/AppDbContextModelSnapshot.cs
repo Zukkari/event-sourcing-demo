@@ -22,38 +22,20 @@ namespace Fintech.Bank.EventSourcing.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Fintech.Bank.EventSourcing.Features.CreateBankAccount.Account", b =>
+            modelBuilder.Entity("Fintech.Bank.EventSourcing.Domain.TransactionEvent", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
 
                     b.Property<string>("AccountNumber")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("account_number");
-
-                    b.Property<decimal>("Balance")
-                        .HasColumnType("numeric")
-                        .HasColumnName("balance");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.HasKey("Id")
-                        .HasName("pk_accounts");
-
-                    b.ToTable("accounts", (string)null);
-                });
-
-            modelBuilder.Entity("Fintech.Bank.EventSourcing.Features.CreateTransaction.Transaction", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("numeric")
@@ -63,45 +45,20 @@ namespace Fintech.Bank.EventSourcing.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<Guid>("FromId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("from_id");
-
-                    b.Property<Guid>("ToId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("to_id");
+                    b.Property<int>("Type")
+                        .HasColumnType("integer")
+                        .HasColumnName("type");
 
                     b.HasKey("Id")
-                        .HasName("pk_transactions");
+                        .HasName("pk_transaction_events");
 
-                    b.HasIndex("FromId")
-                        .HasDatabaseName("ix_transactions_from_id");
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("ix_transaction_events_account_id");
 
-                    b.HasIndex("ToId")
-                        .HasDatabaseName("ix_transactions_to_id");
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_transaction_events_created_at");
 
-                    b.ToTable("transactions", (string)null);
-                });
-
-            modelBuilder.Entity("Fintech.Bank.EventSourcing.Features.CreateTransaction.Transaction", b =>
-                {
-                    b.HasOne("Fintech.Bank.EventSourcing.Features.CreateBankAccount.Account", "From")
-                        .WithMany()
-                        .HasForeignKey("FromId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_transactions_accounts_from_id");
-
-                    b.HasOne("Fintech.Bank.EventSourcing.Features.CreateBankAccount.Account", "To")
-                        .WithMany()
-                        .HasForeignKey("ToId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_transactions_accounts_to_id");
-
-                    b.Navigation("From");
-
-                    b.Navigation("To");
+                    b.ToTable("transaction_events", (string)null);
                 });
 #pragma warning restore 612, 618
         }

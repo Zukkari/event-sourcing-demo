@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Fintech.Bank.EventSourcing.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20241007075812_Initial")]
-    partial class Initial
+    [Migration("20241007084517_AddEventSourcingBase")]
+    partial class AddEventSourcingBase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,26 +25,43 @@ namespace Fintech.Bank.EventSourcing.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Fintech.Bank.EventSourcing.Features.CreateBankAccount.Account", b =>
+            modelBuilder.Entity("Fintech.Bank.EventSourcing.Domain.TransactionEvent", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
                     b.Property<string>("AccountNumber")
-                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("account_number");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric")
+                        .HasColumnName("amount");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.HasKey("Id")
-                        .HasName("pk_accounts");
+                    b.Property<int>("Type")
+                        .HasColumnType("integer")
+                        .HasColumnName("type");
 
-                    b.ToTable("accounts", (string)null);
+                    b.HasKey("Id")
+                        .HasName("pk_transaction_events");
+
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("ix_transaction_events_account_id");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_transaction_events_created_at");
+
+                    b.ToTable("transaction_events", (string)null);
                 });
 #pragma warning restore 612, 618
         }
