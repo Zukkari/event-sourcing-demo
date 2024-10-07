@@ -16,6 +16,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<ICreateBankAccountService, CreateBankAccountService>();
 builder.Services.AddScoped<ICreateTransactionService, CreateTransactionService>();
+builder.Services.AddScoped<ICreateTransactionRepository, CreateTransactionRepository>();
 
 builder.Services.AddTransient<IStartupFilter, MigrationFilter>();
 

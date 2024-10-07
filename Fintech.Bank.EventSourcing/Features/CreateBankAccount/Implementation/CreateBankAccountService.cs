@@ -6,6 +6,23 @@ public class CreateBankAccountService(AppDbContext dbContext) : ICreateBankAccou
 {
     public async Task<AccountDto> CreateAccount(string accountNumber)
     {
-        throw new NotImplementedException();
+        var transactionEvent = new TransactionEvent
+        {
+            Id = Guid.NewGuid(),
+            AccountId = Guid.NewGuid(),
+            AccountNumber = accountNumber,
+            Type = TransactionEventType.Initialized,
+            Amount = 1_000_000,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        dbContext.TransactionEvents.Add(transactionEvent);
+        await dbContext.SaveChangesAsync();
+
+        return new AccountDto
+        {
+            Id = transactionEvent.Id,
+            AccountNumber = accountNumber
+        };
     }
 }
